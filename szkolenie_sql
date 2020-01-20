@@ -1,0 +1,325 @@
+select 
+paragony.working_date
+, paragony.id_store
+, paragony.sale_value
+from qznia_sql.little_tickets paragony
+left join little_dic_stores sklepy on paragony.id_store = sklepy.id_store 
+
+
+
+      join - inner join - inner outer join
+ left join
+right join
+ full join
+ 
+ select dic_stores.id_store
+ , dic_stores.region
+ , dic_regional_manager.rm_login
+ from dic_stores
+ left join dic_regional_manager on dic_stores.region=dic_regional_manager.region
+ 
+ 
+ 
+  select dic_stores.id_store
+ , region
+ , dic_regional_manager.rm_login
+ from dic_stores
+ join dic_regional_manager on dic_stores.region=dic_regional_manager.region
+ 
+ 
+ 
+ 
+ 
+ select tickets.tran_id
+, tickets.id_store
+, tickets.id_article
+, dic_articles.article_name
+, dic_articles.super_group
+from tickets
+inner join dic_articles on tickets.id_article=dic_articles.id_article
+where tickets.discount is not null and tickets.discount<>0
+
+
+
+
+select dic_stores.id_store
+, dic_stores.region
+, dic_regional_manager.rm_login
+from dic_stores 
+left join dic_regional_manager on dic_stores.region=dic_regional_manager.region
+where dic_stores.id_store<100
+order by dic_stores.region
+
+
+
+
+
+select distinct zam.esklep_order_number
+, par.tran_id
+, par.date_tran
+from eshop_orders zam 
+left join tickets par on zam.esklep_order_number=par.esklep_order_number
+where(trunc(working_date, 'MM'))='2018-09-01'
+order by esklep_order_number
+
+
+where year(par.date_tran)=2018 and month(par.date_tran)=9
+
+
+
+
+
+
+select distinct cal.cal_date
+, par.working_date
+from static_calendar cal 
+full join tickets par on cal.cal_date=par.working_date
+where trunc(cal.cal_date, 'MM')='2019-01-01'
+order by cal.cal_date
+
+
+
+
+
+select dic_regional_manager.sm_login
+, dic_articles.super_group
+, substring(dic_stores.region,1,1) as RKS
+, sum(tickets.sale_cnt) as sum_sale_cnt
+, cast(sum(tickets.sale_value) as decimal(38,2)) as sum_sale_value
+
+from tickets
+join dic_articles on tickets.id_article=dic_articles.id_article
+join dic_stores on tickets.id_store=dic_stores.id_store
+join dic_regional_manager on dic_stores.region=dic_regional_manager.region
+join eshop_orders on tickets.esklep_order_number=eshop_orders.esklep_order_number
+
+where tickets.id_article=27923 and substring(dic_stores.region,1,1) in (1,3,6) 
+and year(tickets.working_date)=2018 and eshop_orders.date_pick_up is not null
+
+group by dic_regional_manager.sm_login
+, dic_articles.super_group
+, substring(dic_stores.region,1,1)
+
+order by sum_sale_value desc
+
+
+
+select substring(27923,1,1)
+
+
+select id_store, city from dic_stores 
+union all 
+select id_store, city from little_dic_stores
+limit 100
+
+
+
+
+
+
+select user_id
+from tickets
+where id_article=66173
+and working_date='2017-10-16'
+and user_id is not null
+and id_store=821
+
+minus
+
+select user_id
+from tickets
+where id_article=66173
+and working_date='2018-11-25'
+and user_id is not null
+and id_store=1043
+
+
+(
+select t.tran_id
+, year(t.working_date) as rok_transakcji
+, sum(t.sale_value) as wartosc_paragonu
+from tickets t
+where year(t.working_date)=2017
+group by t.tran_id, year(t.working_date)
+order by wartosc_paragonu desc
+limit 5
+)
+
+union all
+
+(
+select t.tran_id
+, year(t.working_date) as rok_transakcji
+, sum(t.sale_value) as wartosc_paragonu
+from tickets t
+where year(t.working_date)=2018
+group by t.tran_id, year(t.working_date)
+order by wartosc_paragonu desc
+limit 5
+)
+
+
+
+
+select c.cal_date
+nvl(round(sum(t.sale_value),2),0) as suma_wartosci_transakcji
+from 
+static_calendar c
+left join tickets t  
+where trunc(t.working_date, 'MM')='2018-05-01'
+
+
+
+
+select t1.user_id
+, sum(nvl(t17.sale_value, 0)) as sprzedaz_2017
+, sum(nvl(t18.sale_value, 0)) as sprzedaz_2018
+from (select user_id from  tickets
+    where id_article=21 and user_id is not null) t1
+left join (select sale_value from tickets
+    where year(working_date)=2017) t17 on t1.user_id=t17.user_id
+left join (select sale_value from tickets
+    where year(working_date)=2018) t18 on t1.user_id=t18.user_id
+group by t1.user_id
+order by 
+
+
+
+
+
+from tickets
+where id_article=21 and user_id is not null
+
+
+
+
+select distinct user_id
+from eshop_orders
+where year(created_on) =2018 and date_pick_up is null
+order by user_id 
+
+
+select distinct user_id
+from user_crm
+where user_id in (select user_id from eshop_orders
+                where year(created_on) =2018 and date_pick_up is null)
+order by user_id
+
+
+
+
+
+select dic_articles.super_group
+, coalesce(sum(t17.sprzedaz_2017),0) as sprzedaz_2017
+, coalesce(sum(t18.sprzedaz_2018),0) as sprzedaz_2018
+from dic_articles
+    left join (
+        select id_article
+        , sum(sale_value) as sprzedaz_2017
+        from tickets
+        where year(working_date)=2017
+        and month(working_date)<7
+        group by id_article
+        ) t17
+    on dic_articles.id_article=t17.id_article
+    left join (
+        select id_article
+        , sum(sale_value) as sprzedaz_2018
+        from tickets
+        where year(working_date)=2018
+        and month(working_date)<7
+        group by id_article
+        ) t18
+    on dic_articles.id_article=t18.id_article
+group by dic_articles.super_group
+order by super_group
+
+
+
+select esklep_order_number
+, sum(order_price-discount_price) over (partition by user_id) as wartosc_zamowien
+, min(date_pick_up) over (partition by user_id) as pierwsze_zamowienie
+, max(date_pick_up) over (partition by user_id) as ostatnie_zamowienie
+from eshop_orders
+order by esklep_order_number
+
+
+
+
+select working_date 
+, id_store
+, user_id
+, sale_value
+, sum(sale_value) over (partition by user_id) as laczne_zakupy
+, sum(sale_value) over (partition by id_store) as laczna_sprzedaz_sklepu
+, max(working_date) over (partition by user_id) as ostatnie_zakupy_uzytkownika
+, max(sale_value) over (partition by user_id) as najwieksza_wydana_kwota
+, avg(sale_value) over (partition by user_id) as srednia_kwota
+, row_number() over (order by sale_value desc) as ranking_sprzedazy
+from little_tickets_window
+
+
+
+
+
+
+with sprzedaz_2016 as
+(
+select t.user_id
+, sum(t.sale_value) as sprzedaz_total_16
+from tickets t
+join user_crm u
+on t.user_id=u.user_id
+where t.id_article=21 and year(t.working_date)=2016
+and u.user_id is not null and u.sex=1
+group by  t.user_id
+)
+,
+sprzedaz_2017 as
+(
+select t.user_id
+, sum(t.sale_value) as sprzedaz_total_17
+from tickets t
+join user_crm u
+on t.user_id=u.user_id
+where t.id_article=21 and year(t.working_date)=2017
+and u.user_id is not null and u.sex=1
+group by  t.user_id
+)
+,
+sprzedaz_2018 as
+(
+select t.user_id
+, sum(t.sale_value) as sprzedaz_total_18
+from tickets t
+join user_crm u
+on t.user_id=u.user_id
+where t.id_article=21 and year(t.working_date)=2018
+and u.user_id is not null and u.sex=1
+group by  t.user_id
+)
+
+select user_crm.user_id
+, s16.sprzedaz_total_16
+, s17.sprzedaz_total_17
+, s18.sprzedaz_total_18
+from user_crm
+left join sprzedaz_2016 s16
+on user_crm.user_id=s16.user_id
+left join sprzedaz_2017 s17
+on user_crm.user_id=s17.user_id
+left join sprzedaz_2018 s18
+on user_crm.user_id=s18.user_id
+
+
+
+
+
+
+
+
+
+
+
+
+
