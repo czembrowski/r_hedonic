@@ -1,0 +1,142 @@
+## read database ##
+
+data <- read.csv("F:/ZKTiK/database_full2.csv", header=TRUE, sep = ";")
+names(data)
+
+## additional X var ##
+
+data$binary1222 <- data$source_id==1222
+
+data$binary_parki <- data$eu_p_l_o_poza_zktik<=59
+data$binary_ksm <- data$eu_ksiezy_mlyn<=2500
+
+##  OLS  ###
+
+zktik<-lm(cena_m2~Solaris+okres1850_1880+okres1881_1918+okres1919_1939+okres1945_1970+okres1971_1989+okres1990_2010+ln_powierzchnia_lokalu+kondyg1+kondyg2+kondyg4+kondyg5+kondyg6+kondyg7+kondyg8+kondyg9+kondyg10+kondyg11+kondyg12+kondyg13+kondyg14+buf_all_per+trend
++ln_eu_bas+ln_eu_boi+ln_eu_wk+ln_eu_cen+ln_eu_gim+ln_eu_pm+ln_eu_sp+ln_eu_ss+ln_eu_sw+ln_eu_zlob+
+ln_eu_woonerf+ln_eu_ogrodowa+binary_ksm+ln_eu_ogrody_nad_lodka+ln_eu_parki_zktik_reszta+binary_parki+binary1222,
+data=data)
+summary(zktik)
+
+## quantile regression ##
+
+summary(rq(cena_m2~Solaris+okres1850_1880+okres1881_1918+okres1919_1939+okres1945_1970+okres1971_1989+okres1990_2010+ln_powierzchnia_lokalu+kondyg1+kondyg2+kondyg4+kondyg5+kondyg6+kondyg7+kondyg8+kondyg9+kondyg10+kondyg11+kondyg12+kondyg13+kondyg14+buf_all_per+trend
++ln_eu_bas+ln_eu_boi+ln_eu_wk+ln_eu_cen+ln_eu_gim+ln_eu_pm+ln_eu_sp+ln_eu_ss+ln_eu_sw+ln_eu_zlob+
+ln_eu_woonerf+ln_eu_ogrodowa+ln_eu_ksiezy_mlyn+ln_eu_ogrody_nad_lodka+ln_eu_parki_zktik_reszta+binary_parki+binary1222,
+tau=0.25, data=data))
+
+
+
+
+
+m_euklides_n5<-lm(cena_m2~Baluty+Gorna+Widzew+Polesie+Solaris
++okres1850_1880+okres1881_1918+okres1919_1939+okres1945_1970+okres1971_1989
++kondyg1+kondyg6+kondyg7+kondyg8+trend_kw+ln_dyst_boi+ln_dyst_cen+ln_dyst_gim+ln_dyst_sw+ln_eu_ter_przem+ln_eu_od+ln_eu_lsmall+ln_eu_plarge+ln_eu_pmedium+spatial_autocorrelation_term)
+
+
+vuong(m_dzielnie_n5, m_euklides_n5, level=0.1)
+
+
+TERAZ BOX-COX:
+
+plot(m_dzielnie_n5, which=1) 
+
+library(MASS)
+bc <- boxcox(m_dzielnie_n5)
+which.max(bc$y)
+
+lambda <- bc$x[which.max(bc$y)]
+lambda
+
+z <- cena_m2^lambda
+
+
+
+
+library(spdep)
+
+
+queen2_nb<-read.gal("C:/Piotr/Artykul1/Geoda/queen_order_1.gal", region.id=NULL, override.id=FALSE)
+queen2<- nb2listw(queen2_nb)
+
+nearest5_nb<-read.gwt2nb("C:/Piotr/Artykul1/Geoda/nearest5.gwt", region.id=NULL)
+nearest5<-nb2listw(nearest5_nb)
+nearest10_nb<-read.gwt2nb("C:/Piotr/Artykul1/Geoda/nearest10.gwt", region.id=NULL)
+nearest10<-nb2listw(nearest10_nb)
+nearest15_nb<-read.gwt2nb("C:/Piotr/Artykul1/Geoda/nearest15.gwt", region.id=NULL)
+nearest15<-nb2listw(nearest15_nb)
+
+
+
+
+plot(cena_m2, reszty, ylab="Residuals", xlab="cena_m2", main="Residuals against the square meter price")
+plot(cena_m2, reszty_bez_solarisa, ylab="Residuals", xlab="cena_m2", main="Residuals against the square meter price")
+
+write.table(reszty, "C:/Piotr/Artykul1/reszty.csv")
+
+
+
+
+
+
+
+
+library(spdep)
+
+
+Moran1 <- read.csv(file="C:/Piotr/Artykul1/ARTYKUL/Moran_I.csv",head=TRUE,sep=";")
+Moran1.dists <- as.matrix(dist(cbind(Moran1$Lon, Moran1$Lat)))
+
+Moran1.dists.inv <- 1/Moran1.dists
+Moran1.dists.sq <- 1/Moran1.dists^2
+Moran1.dists.inv[is.infinite(Moran1.dists.inv)] <- 0
+Moran1.dists.sq[is.infinite(Moran1.dists.sq)] <- 0
+Inv_dist2<-Moran1.dists.inv/rowSums(Moran1.dists.inv)
+Sq_dist2<-Moran1.dists.sq/rowSums(Moran1.dists.sq)
+
+Inv_dist<-mat2listw(Inv_dist2)
+write.csv(Inv_dist, "Inv_dist.csv")
+Sq_dist<-mat2listw(Sq_dist2)
+write.csv(Sq_dist, "Sq_dist.csv")
+
+
+
+save.image(file="C:/Piotr/Artykul2/R/Inv_sq2")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A sprawdzimy se heteroskedastyczność:
+
+library(lmtest)
+bptest(m_dystans)
+library(plm)
+hc<-vcovHC(m_dystans, type="HC1")
+
+
+No i wiadomka:
+
+        studentized Breusch-Pagan test
+
+data:  m_softgis
+BP = 576.4263, df = 40, p-value < 2.2e-16
+
+więc stosujemy odporne estymatory:
+
+
+m_softgis_n5<-gstsls(cena_m2~okres1850_1880+okres1881_1918+okres1919_1939+okres1945_1970+okres1971_1989+okres1990_2010+kondyg1+kondyg6+kondyg7+kondyg8+buf_brak_300+buf_neg_300+ln_cm_ogolnie+ln_lasy_ok+ln_parki_swietne+ln_parki_ok+ln_sk_brak_duze+Gorna+Baluty+Polesie+Widzew+ln_dyst_gim+ln_dyst_bas+ln_dyst_cen+trend_kw, listw=nearest5, robust=TRUE)
+summary(m_softgis_n5)
+
